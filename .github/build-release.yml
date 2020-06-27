@@ -6,7 +6,7 @@ on:
   push:
     branches: 
       - master
-      - feature/automate-deployments
+      - 'feature/automate-deployments'
 
 jobs:
   build:
