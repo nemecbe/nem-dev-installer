@@ -5,8 +5,8 @@ name: Installer CI
 on: 
   push:
     branches: 
-    - master
-    - 'feature/**'
+      - master
+      - 'feature/**'
 
 jobs:
   build:
