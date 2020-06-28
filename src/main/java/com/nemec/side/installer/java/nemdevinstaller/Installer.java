@@ -16,6 +16,26 @@
  */
 package com.nemec.side.installer.java.nemdevinstaller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sun.xml.internal.messaging.saaj.util.ByteInputStream;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.List;
+import java.util.Map;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+import java.util.zip.ZipInputStream;
+import java.util.zip.ZipOutputStream;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.util.EntityUtils;
+
 /**
  * The NemDev Installer is an application that will be used to automate the 
  * installation and update process for all of the desktop applications I develop.
@@ -37,7 +57,63 @@ public class Installer {
      * Main method for the NemDev Installer Application
      * @param args is unused at this time in the application's development
      */
-    public static void main(String[] args) {
-        System.out.println("Hello Installer!");
+    public static void main(String[] args) throws Exception {
+        String installerUrl = "https://api.github.com/repos/nemecbe/nem-dev-installer/releases/latest";
+
+        try {
+            CloseableHttpClient httpClient = HttpClientBuilder.create().build();
+            HttpGet request = new HttpGet(installerUrl);
+            request.addHeader("content-type", "application/vnd.github.v3+json");
+            HttpResponse result = httpClient.execute(request);
+            String json = EntityUtils.toString(result.getEntity(), "UTF-8");
+            
+            ObjectMapper mapper = new ObjectMapper();
+            Map<String, Object> dataMap = mapper.readValue(json, Map.class);
+            
+            httpClient = HttpClientBuilder.create().build();
+            List<Map<String, String>> assets = (List<Map<String, String>>)dataMap.get("assets");
+            String assetDownloadUrl = assets.get(0).get("browser_download_url");
+            request = new HttpGet(assetDownloadUrl);
+            request.addHeader("content-type", assets.get(0).get("content_type"));
+            result = httpClient.execute(request);
+            
+            byte[] installerZip = EntityUtils.toByteArray(result.getEntity());
+            FileOutputStream fout = new FileOutputStream("installer.zip");
+            fout.write(installerZip);
+            fout.close();
+            
+            ZipInputStream zin = new ZipInputStream(new FileInputStream("installer.zip"));
+            ZipEntry zEntry;
+            while ((zEntry = zin.getNextEntry()) != null) {
+                File target = new File("./testing");
+                int BUFFER_SIZE = 4096;
+                File file = new File(target, zEntry.getName());
+
+//                if (!file.toPath().normalize().startsWith(target.toPath())) {
+//                    throw new IOException("Bad zip entry");
+//                }
+
+                if (zEntry.isDirectory()) {
+                    file.mkdirs();
+                    continue;
+                }
+
+                byte[] buffer = new byte[BUFFER_SIZE];
+                file.getParentFile().mkdirs();
+                BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(file));
+                int count;
+
+                while ((count = zin.read(buffer)) != -1) {
+                    out.write(buffer, 0, count);
+                }
+
+                out.close();
+            }
+            zin.close();
+
+            System.out.println(json);
+        } catch (IOException ex) {
+            throw ex;
+        }
     }
 }
