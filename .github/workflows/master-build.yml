@@ -27,7 +27,7 @@ jobs:
       run: mvn -B package --file pom.xml
     
     - name: Package
-      run: zip -m installer.zip target
+      run: zip -mr installer.zip target
     
     - name: Create Release
       id: create_release
