@@ -47,14 +47,4 @@ jobs:
         asset_path: ./installer.zip
         asset_name: installer.zip
         asset_content_type: application/zip
---
 
-  name: Installer CI (Also)
-  on: [push]
-  jobs:
-    test:
-      runs-on: ubuntu-latest
-      name: Running
-      run: echo "I Ran!"
-  
-  
